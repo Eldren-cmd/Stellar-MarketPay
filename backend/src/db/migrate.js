@@ -61,6 +61,11 @@ async function migrate() {
 
       await client.query("BEGIN");
       try {
+        await pool.setLocalTimeouts(client, {
+          label: "migration",
+          statementTimeoutMs: pool.timeoutConfig.migrationStatementTimeoutMs,
+          lockTimeoutMs: pool.timeoutConfig.migrationLockTimeoutMs,
+        });
         await client.query(migration.upSql);
         await client.query("INSERT INTO schema_migrations (version, name) VALUES ($1, $2)", [
           migration.version,
@@ -105,6 +110,11 @@ async function rollbackLastMigration() {
 
     await client.query("BEGIN");
     try {
+      await pool.setLocalTimeouts(client, {
+        label: "migration",
+        statementTimeoutMs: pool.timeoutConfig.migrationStatementTimeoutMs,
+        lockTimeoutMs: pool.timeoutConfig.migrationLockTimeoutMs,
+      });
       await client.query(downSql);
       await client.query("DELETE FROM schema_migrations WHERE version = $1", [last.version]);
       await client.query("COMMIT");
